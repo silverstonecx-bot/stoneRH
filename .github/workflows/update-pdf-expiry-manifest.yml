@@ -2,7 +2,7 @@ name: Refresh Cloudflare PDF expiry manifest
 
 on:
   push:
-    branches: [main]
+    branches: [main, codex/cloudflare-pdf-expiry]
     paths:
       - "DownloadFile/**"
       - "functions/**"
@@ -25,7 +25,6 @@ concurrency:
 
 jobs:
   refresh:
-    # Never write to a branch in a different repository.
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
