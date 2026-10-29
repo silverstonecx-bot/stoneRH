@@ -1,0 +1,52 @@
+name: Refresh Cloudflare PDF expiry manifest
+
+on:
+  push:
+    branches: [main, codex/cloudflare-pdf-expiry]
+    paths:
+      - "DownloadFile/**"
+      - "functions/**"
+      - "scripts/build_pdf_manifest.py"
+      - ".github/workflows/update-pdf-expiry-manifest.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "DownloadFile/**"
+      - "functions/**"
+      - "scripts/build_pdf_manifest.py"
+      - ".github/workflows/update-pdf-expiry-manifest.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pdf-expiry-manifest-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out complete PDF history
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
+          fetch-depth: 0
+
+      - name: Build manifest from latest PDF upload commits
+        run: python3 scripts/build_pdf_manifest.py
+
+      - name: Commit manifest for Cloudflare Pages
+        env:
+          TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+        run: |
+          git add pdf-expiry.json
+          if git diff --cached --quiet; then
+            echo "PDF expiry manifest is already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Refresh PDF expiry manifest"
+          git push origin "HEAD:$TARGET_BRANCH"
