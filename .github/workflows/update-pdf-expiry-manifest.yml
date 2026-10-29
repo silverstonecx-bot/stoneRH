@@ -1,0 +1,41 @@
+name: Refresh Cloudflare PDF expiry manifest
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "DownloadFile/**"
+      - "functions/**"
+      - "scripts/build_pdf_manifest.py"
+      - ".github/workflows/update-pdf-expiry-manifest.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pdf-expiry-manifest
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out complete PDF history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build manifest from latest PDF upload commits
+        run: python3 scripts/build_pdf_manifest.py
+
+      - name: Commit manifest for Cloudflare Pages
+        run: |
+          git add pdf-expiry.json
+          if git diff --cached --quiet; then
+            echo "PDF expiry manifest is already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Refresh PDF expiry manifest"
+          git push
