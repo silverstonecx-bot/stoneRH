@@ -4,6 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>File not found</title>
+  <script>
+    if (!window.location.pathname.endsWith("/stoneRH/404.html")) {
+      window.location.replace("/stoneRH/404.html");
+    }
+  </script>
   <style>
     body { min-height: 100vh; margin: 0; display: grid; place-items: center; background: #f4f6f8; color: #17202a; font: 1rem/1.6 system-ui, sans-serif; }
     main { max-width: 34rem; margin: 2rem; padding: 2.5rem; background: white; border-radius: 1rem; box-shadow: 0 1rem 3rem #17202a18; }
@@ -16,7 +21,7 @@
     <p class="code">404</p>
     <h1>File not found</h1>
     <p>This file may have expired or the address may be incorrect.</p>
-    <p><a href="./">Return to the downloads page</a></p>
+    <p><a href="/stoneRH/">Return to the downloads page</a></p>
   </main>
 </body>
 </html>
