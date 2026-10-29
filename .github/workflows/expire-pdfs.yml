@@ -1,0 +1,42 @@
+name: Expire PDFs after 365 days
+
+on:
+  schedule:
+    - cron: "15 0 * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "DownloadFile/**"
+      - "scripts/expire_pdfs.py"
+      - ".github/workflows/expire-pdfs.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: expire-pdfs
+  cancel-in-progress: false
+
+jobs:
+  expire:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Remove PDFs older than 365 days
+        id: expire
+        run: python3 scripts/expire_pdfs.py --days 365
+
+      - name: Commit expired PDFs
+        if: steps.expire.outputs.removed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -u -- DownloadFile
+          git commit -m "Expire PDFs older than 365 days"
+          git push
