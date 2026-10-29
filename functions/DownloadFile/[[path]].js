@@ -1,6 +1,16 @@
 const EXPIRY_SECONDS = 365 * 24 * 60 * 60;
 const PDF_PREFIX = "/DownloadFile/";
 
+function redirectTo404(url) {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: new URL("/404.html", url).toString(),
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
 export async function onRequest(context) {
   const { request, env, next } = context;
   const url = new URL(request.url);
@@ -11,30 +21,24 @@ export async function onRequest(context) {
   try {
     relativePath = decodeURIComponent(url.pathname.slice(1));
   } catch {
-    return next();
+    return redirectTo404(url);
   }
-  if (relativePath.split("/").some((part) => part === "..")) return next();
+  if (relativePath.split("/").some((part) => part === "..")) return redirectTo404(url);
 
   const manifestResponse = await env.ASSETS.fetch(new URL("/pdf-expiry.json", url));
-  if (!manifestResponse.ok) return next();
+  if (!manifestResponse.ok) return redirectTo404(url);
 
   let manifest;
   try {
     manifest = await manifestResponse.json();
   } catch {
-    return next();
+    return redirectTo404(url);
   }
   const uploadedAt = Number(manifest[relativePath]);
-  if (!Number.isFinite(uploadedAt) || uploadedAt <= 0) return next();
+  if (!Number.isFinite(uploadedAt) || uploadedAt <= 0) return redirectTo404(url);
 
   const expiresAt = uploadedAt + EXPIRY_SECONDS;
   if (Date.now() / 1000 < expiresAt) return next();
 
-  return new Response(null, {
-    status: 302,
-    headers: {
-      Location: new URL("/404.html", url).toString(),
-      "Cache-Control": "no-store",
-    },
-  });
+  return redirectTo404(url);
 }
